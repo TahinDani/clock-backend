@@ -1,24 +1,64 @@
 require('dotenv').config()
 require('full-icu')
+
 const express = require('express')
+const cors = require('cors')
 const app = express()
 const port = 3000
 
-app.get('/', (req, res) => res.send('Hello World!'))
+app.use(cors())
+
+app.get('/', (req, res) => res.redirect('/currentTime'))
 
 app.get('/currentTime', function (req, res) {
-	const {locale, type, is12} = req.query
-	//console.log(locale, type, is12)
-	switch(type) {
-		case 'date':
-			res.send(new Date().toLocaleDateString(locale, { timeZone: process.env.TIME_ZONE }))
-			break;
-		case 'time':
-			res.send(new Date().toLocaleTimeString(locale, { timeZone: process.env.TIME_ZONE, hour12: is12 === 'true' }))
-			break;
-		default:
-			res.send(new Date().toLocaleString(locale, { timeZone: process.env.TIME_ZONE, hour12: is12 === 'true' }))
+	/* 
+	Request:
+	locale: string, "hu-HU" | "en-EN" | ...
+	type: string, "date" | "time", defaults to full date if omitted
+	is12: string, "true", defaults to false if omitted or not "true"
+	showSeconds: string, "true", defaults to false if omitted or not "true"
+	Response:
+	{"date": "2020. 05. 19.", "time": "15:44:46"} or just one of them based on the type in request
+	*/
+	console.log("-------------------------REQUEST-----------------------")
+	console.log(req.query)
+	
+	try {
+		const {locale, type, is12, showSeconds} = req.query
+		const commonOptions = {
+			timeZone: process.env.TIME_ZONE
+		}
+		const timeOptions = {
+			hour12: is12 === 'true',
+			hour: '2-digit',
+			minute: '2-digit',
+			... (showSeconds === 'true') && {second: '2-digit'}
+		}
+		console.log(timeOptions)
+	
+		const date = new Date()
+		const dateResponse = {
+			date: date.toLocaleDateString(locale, commonOptions),
+			time: date.toLocaleTimeString(locale, {...commonOptions, ...timeOptions}),
+		}
+
+		console.log("++++++++++++++++++++++++RESPONSE++++++++++++++++++++")
+		//console.log(date)
+
+		switch(type) {
+			case 'date':
+				res.status(200).json({date: dateResponse.date})
+				break;
+			case 'time':
+				res.status(200).json({time: dateResponse.time})
+				break;
+			default:
+				res.status(200).json(dateResponse)
+		}
+	} catch (e) {
+		res.status(500).json({message: e.message})
 	}
+	
 	
 })
 
