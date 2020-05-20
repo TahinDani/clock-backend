@@ -3,10 +3,16 @@ require('full-icu')
 
 const express = require('express')
 const cors = require('cors')
+const fs = require('fs')
+const morgan = require('morgan')
+const path = require('path')
 const app = express()
-const port = 3000
+const port = 3001
+
+const accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' })
 
 app.use(cors())
+app.use(morgan('common', { stream: accessLogStream }))
 
 app.get('/', (req, res) => res.redirect('/currentTime'))
 
@@ -34,7 +40,7 @@ app.get('/currentTime', function (req, res) {
 			minute: '2-digit',
 			... (showSeconds === 'true') && {second: '2-digit'}
 		}
-		console.log(timeOptions)
+		//console.log(timeOptions)
 	
 		const date = new Date()
 		const dateResponse = {
